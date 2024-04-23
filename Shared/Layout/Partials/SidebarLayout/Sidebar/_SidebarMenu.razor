@@ -1,0 +1,104 @@
+@using Core.Utilities.Results
+@using Starterkit.Models
+@using Starterkit.Services
+@using System.Net.Http.Headers
+@inject HttpClient httpClient
+@inject NavigationManager navigationManager
+@inject AuthenticationStateProvider authenticationStateProvider
+@inject TokenService TokenService
+
+<!--begin::sidebar menu-->
+<div class="app-sidebar-menu overflow-hidden flex-column-fluid">
+    <!--begin::Menu wrapper-->
+    <div id="kt_app_sidebar_menu_wrapper" class="app-sidebar-wrapper">
+        <!--begin::Scroll wrapper-->
+        <div id="kt_app_sidebar_menu_scroll" class="scroll-y my-5 mx-3" data-kt-scroll="true" data-kt-scroll-activate="true" data-kt-scroll-height="auto" data-kt-scroll-dependencies="#kt_app_sidebar_logo, #kt_app_sidebar_footer" data-kt-scroll-wrappers="#kt_app_sidebar_menu" data-kt-scroll-offset="5px" data-kt-scroll-save-state="true">
+            <!--begin::Menu-->
+            <div class="menu menu-column menu-rounded menu-sub-indention fw-semibold fs-6" id="#kt_app_sidebar_menu" data-kt-menu="true" data-kt-menu-expand="false">
+                @foreach (var item in Menus)
+                {
+                    <!--begin:Menu item-->
+                    <div data-kt-menu-trigger="click" class="menu-item menu-accordion">
+                        <!--begin:Menu link-->
+                        <span class="menu-link">
+                            <span class="menu-icon">@((MarkupString)KTTheme.GetIcon($"{item.Icon}", "fs-2"))</span>
+                            <span class="menu-title">@item.Name</span>
+                            <span class="menu-arrow"></span>
+                        </span>
+                        <!--end:Menu link-->
+                        <!--begin:Menu sub-->
+                        @foreach (var childMenu in item.ChildMenus)
+                        {
+                            <div class="menu-sub menu-sub-accordion">
+                                <!--begin:Menu item-->
+                                <div class="menu-item">
+                                    <!--begin:Menu link-->
+                                    <a class="menu-link" href="@($"/{childMenu.Path}")">
+                                        <span class="menu-bullet">
+                                            <span class="bullet bullet-dot"></span>
+                                        </span>
+                                        <span class="menu-title">@childMenu.Name</span>
+                                    </a>
+                                    <!--end:Menu link-->
+                                </div>
+                                <!--end:Menu item-->
+                            </div>
+                        }
+                        <!--end:Menu sub-->
+                    </div>
+                    <!--end:Menu item-->
+                }
+
+            </div>
+            <!--end::Menu-->
+        </div>
+        <!--end::Scroll wrapper-->
+    </div>
+    <!--end::Menu wrapper-->
+</div>
+<!--end::sidebar menu-->
+@code {
+    private List<MenuViewModel> Menus = new List<MenuViewModel>();
+
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Menüler hazýr olduðunda, örneðin /home sayfasýna yönlendirme yapabilirsiniz
+            Menus = await GetMenus();
+            StateHasChanged();
+
+            if (Menus.Count == 0)
+            {
+                NavigationManager.NavigateTo("/home");
+            }
+        }
+    }
+
+    private async Task<List<MenuViewModel>> GetMenus()
+    {
+        var token = await localStorage.GetItemAsync<string>("auth_token");
+
+        // HttpClient ile istek oluþturma
+        var requestMessage = new HttpRequestMessage(HttpMethod.Get, "https://api.kolaymatbaam.com/api/menuroles/getall");
+
+        // Authorization baþlýðýný ekleyerek JWT token'ý isteðe eklemek
+        requestMessage.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        // HttpClient ile isteði gönderme
+        var response = await httpClient.SendAsync(requestMessage);
+
+        if (response.IsSuccessStatusCode)
+        {
+            var menus = await response.Content.ReadFromJsonAsync<SuccessDataResult<IEnumerable<MenuViewModel>>>();
+            return menus!.Data.ToList();
+        }
+        else
+        {
+            // Hata mesajý gösterme
+            return new List<MenuViewModel>();
+        }
+    }
+}
+

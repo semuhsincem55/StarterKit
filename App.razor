@@ -1,0 +1,23 @@
+﻿@using Starterkit.Pages.Error
+@using Starterkit.Services
+@inject TokenService TokenService
+@inject NavigationManager navigationManager
+
+<CascadingAuthenticationState>
+    <Router AppAssembly="@typeof(App).Assembly">
+        <Found Context="routeData">
+            <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(Layout.DefaultLightSidebar)">
+                <NotAuthorized>
+                    <Starterkit.Pages.Auth.SignIn />
+                </NotAuthorized>
+            </AuthorizeRouteView>
+            <FocusOnNavigate RouteData="@routeData" Selector="h1" />
+        </Found>
+        <NotFound>
+            <PageTitle>Not found</PageTitle>
+            <LayoutView Layout="@typeof(Layout.SystemLayout)">
+                <p role="alert">Sorry, there's nothing at this address.</p>
+            </LayoutView>
+        </NotFound>
+    </Router>
+</CascadingAuthenticationState>
